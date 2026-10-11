@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#171f25"><meta name="description" content="A boop-inspired, kitten-pushing strategy game with local Monte Carlo Tree Search and interactive move analysis.">
+<title>boop. · Play against the AI</title>
+<style>
+:root{color-scheme:dark;--bg:#172028;--panel:#22303a;--panel2:#2c3b44;--line:#41535c;--text:#f8f0e5;--muted:#b5c2c1;--orange:#e7ac72;--mint:#9fc8bf;--cream:#fbddac;--ink:#6b7682}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15% 0,#354a51 0,transparent 45%),var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}button,select{font:inherit}[hidden]{display:none!important}
+main{max-width:1120px;padding:22px 18px 36px;margin:auto}.mast{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{font-family:Georgia,serif;font-size:clamp(39px,5vw,55px);font-weight:800;line-height:1;letter-spacing:-.06em}.brand .dot{color:#e6a978}.tagline{margin:4px 0 0;color:#bfcbc7;font-size:12px}.pill{font-weight:800;font-size:10px;letter-spacing:.08em;border:1px solid #67807e;border-radius:20px;padding:6px 10px;color:#b4d9c9;text-transform:uppercase;white-space:nowrap}
+.layout{display:grid;grid-template-columns:minmax(0,580px) minmax(300px,1fr);gap:24px;align-items:start}.left,.right{min-width:0}.players{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:11px}.player{background:#26343e;border:1px solid #465963;border-radius:14px;padding:11px;display:grid;grid-template-columns:34px minmax(0,1fr);gap:3px 9px;align-items:center}.player.active{border-color:#e1b482;background:#353d43}.player .avatar{grid-row:span 2}.player b{font-size:13px}.player small{font-size:11px;color:#bac7c7}.avatar{width:30px;height:30px;border-radius:11px;display:grid;place-items:center;font-size:20px;background:#d9bc95;color:#6d4533}.avatar.blu{background:#889cb0;color:#24323b}
+.board-wrap{border:1px solid #617677;border-radius:20px;padding:14px;background:linear-gradient(145deg,#879b9b,#536d6f 55%,#354c50);box-shadow:0 18px 45px #0005}.board{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;aspect-ratio:1;border:8px solid #d8b3a0;border-radius:13px;overflow:hidden;box-shadow:0 4px 13px #0006,inset 0 0 4px #0004;background:#efe6d5}.sq{appearance:none;border:1px dashed #b3a69c55;min-width:0;position:relative;display:grid;place-items:center;padding:0;aspect-ratio:1;background:#f3e3d2;touch-action:manipulation;cursor:pointer}.sq:nth-child(12n+1),.sq:nth-child(12n+3),.sq:nth-child(12n+5),.sq:nth-child(12n+8),.sq:nth-child(12n+10),.sq:nth-child(12n+12){background:#e7d3c2}.sq::after{content:"+";position:absolute;bottom:0;right:2px;font-size:11px;font-weight:300;color:#c6b3a8;pointer-events:none}.sq:disabled{cursor:default}.sq:not(:disabled):hover{box-shadow:inset 0 0 0 3px #c68e5e}.sq:focus-visible,.btn:focus-visible,.piece-btn:focus-visible{outline:3px solid #ffbf7b;outline-offset:-3px;z-index:4}.sq.last{box-shadow:inset 0 0 0 3px #cf965b}.sq.highlight{box-shadow:inset 0 0 0 3px #e3ab5c}.heat{position:absolute;inset:0;pointer-events:none;z-index:0}.sq .hm{position:absolute;top:2px;left:3px;font-size:9px;font-weight:850;line-height:1;color:#534539;z-index:1;pointer-events:none}.sq .hm.opp{left:auto;right:3px;color:#264757}.sq .ptag{position:absolute;bottom:2px;left:2px;z-index:2;font-size:8px;color:#624b3b;background:#fde2aa;border-radius:3px;padding:0 3px}.sq .ptag.opp{left:auto;right:2px;background:#b3d9e4;color:#294553}
+.catpiece{position:relative;isolation:isolate;display:block;width:67%;height:66%;margin-top:10%;z-index:2;background:linear-gradient(145deg,#ffe5b6,#d2a577);border:2px solid #bb926d;box-shadow:inset -3px -4px 5px #9d6b5128,0 4px 4px #6d51413f;border-radius:46% 46% 43% 43%;pointer-events:none}.catpiece.opp{background:linear-gradient(145deg,#b6c5d5,#758ba2);border-color:#667889}.catpiece::before,.catpiece::after{content:"";position:absolute;top:-22%;width:36%;height:40%;border:2px solid #b88c66;background:#f0c996;z-index:-1}.catpiece::before{left:-7%;clip-path:polygon(0 0,100% 25%,100% 100%,0 100%);border-radius:4px 3px 0 0;transform:rotate(-17deg)}.catpiece::after{right:-7%;clip-path:polygon(0 25%,100% 0,100% 100%,0 100%);border-radius:3px 4px 0 0;transform:rotate(17deg)}.catpiece.opp::before,.catpiece.opp::after{background:#8da0b1;border-color:#667889}.catpiece.kit{width:58%;height:57%;margin-top:14%}.catpiece .eyes{position:absolute;top:34%;left:16%;right:16%;display:flex;justify-content:space-between}.catpiece .eyes i{display:block;width:15%;aspect-ratio:1;border-radius:50%;background:#493b39}.catpiece.opp .eyes i{background:#293541}.catpiece .nose{position:absolute;left:44%;top:57%;width:14%;height:11%;background:#a96467;border-radius:45% 45% 80% 80%}.catpiece .badge-cat{position:absolute;right:-8px;bottom:-7px;font-size:9px;font-weight:850;line-height:1.2;background:#6b4935;color:#fff6e5;border-radius:5px;padding:2px 4px;border:1px solid #e5be99}.catpiece.opp .badge-cat{background:#415b6a;color:#edf7fa;border-color:#b4c6d1}.sq .previewmark{position:absolute;inset:8%;border:3px solid #f4bd76;border-radius:100%;z-index:3;pointer-events:none}
+.pick-piece{display:flex;align-items:center;justify-content:space-between;gap:9px;background:#24333c;border:1px solid #455963;border-radius:13px;padding:10px 13px;margin-top:12px}.pick-piece label{font-size:12px;color:#c7d3d0;font-weight:700}.pieces{display:flex;gap:7px}.piece-btn{background:#293f4a;border:1px solid #637781;color:#eee8db;padding:9px 12px;border-radius:9px;cursor:pointer;white-space:nowrap;font-size:12px}.piece-btn.selected{background:#e9b783;border-color:#f4ca96;color:#28353b;font-weight:850}.piece-btn:disabled{opacity:.36;cursor:default}.status{background:#273640;border:1px solid #4a606a;border-radius:14px;padding:14px 16px;margin-bottom:12px;min-height:92px}.status strong{font-size:17px}.status p{font-size:12px;margin:5px 0 0;color:#c4d0d0}.pan{background:#23323c;border:1px solid #445963;border-radius:14px;padding:15px;margin-bottom:12px}.pan h2{font-size:14px;margin:0 0 12px}.muted{color:#bac7c7;font-size:11px}.buttons{display:flex;gap:8px;flex-wrap:wrap}.btn{cursor:pointer;border:1px solid #75898a;border-radius:9px;padding:10px 12px;color:#f2f2e9;background:#324550;font-size:12px;font-weight:700}.btn.primary{background:#e5b585;color:#27353a;border-color:#e5b585}.btn:disabled{opacity:.45;cursor:default}.btn:not(:disabled):hover{filter:brightness(1.12)}.buttons .btn{flex:1}.settings{display:grid;grid-template-columns:1fr auto;align-items:center;gap:11px;margin-top:12px;font-size:12px}.settings label{color:#c7d3d1}select{background:#172630;color:#faf1e6;border:1px solid #526a74;border-radius:8px;padding:7px 9px;max-width:180px}
+.toggle{display:flex;align-items:center;gap:8px;cursor:pointer;margin:11px 0;font-size:12px}.toggle input{accent-color:#e4ad73;width:16px;height:16px;margin:0}.swatch{margin-left:auto;width:11px;height:11px;border-radius:3px;background:#e9b46a}.swatch.blue{background:#81bed0}.statrow{display:flex;align-items:baseline;justify-content:space-between;gap:6px;font-size:12px}.statrow b{font-variant-numeric:tabular-nums}.statrow small{font-size:10px;color:#c6d3d0}.meter{height:12px;display:flex;overflow:hidden;border-radius:6px;background:#596571;margin:9px 0}.meter i{display:block;height:100%;transition:width .18s}.meter .p0{background:#e8b675}.meter .p1{background:#81b9cd}.forecast{font-size:13px;font-weight:750;display:flex;justify-content:space-between;gap:5px}.forecast span:last-child{color:#a5d8e2}.mininote{font-size:10px;line-height:1.5;color:#bdcbcb;margin-top:8px}.simbox{padding:10px 11px;border-radius:9px;background:#182833;border:1px solid #3f5660;margin-top:11px}.simcount{display:flex;justify-content:space-between;gap:10px;margin:4px 0;font-size:12px;font-variant-numeric:tabular-nums}.simcount strong{color:#f4d1a5}.simcount.opp strong{color:#abd5df}.split{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}.split .btn{padding:9px 7px}.busy{text-align:center;color:#dbc49e;font-size:11px;margin:6px 0 0}.recs{display:grid;gap:9px}.rec-title{font-size:11px;text-transform:uppercase;letter-spacing:.1em;font-weight:750;margin-top:5px;color:#e7be8a}.rec-title.opp{color:#a9d5e6}.rec{display:flex;align-items:baseline;gap:8px;font-size:12px;margin:5px 0}.rec .rank{border-radius:5px;background:#3d5260;padding:1px 6px;font-size:10px;min-width:22px;text-align:center}.rec .move{min-width:73px;font-weight:800}.rec .score{margin-left:auto;color:#d6bd99;font-weight:800}.rec.opp .score{color:#afd5e0}.choice-list{display:grid;gap:6px;margin-top:9px}.choice-list .btn{text-align:left;font-weight:650}.choice-list .btn span{float:right;color:#d2e0dc;font-size:10px}.guide{margin-top:10px;border:1px solid #3c5159;border-radius:13px;background:#22313a;color:#c2cfd0;padding:13px 16px;font-size:12px}.guide summary{cursor:pointer;font-weight:750;color:#fbefe0;font-size:13px}.guide p{margin:7px 0 0}.foot{margin-top:17px;font-size:10px;color:#aec1c2}.sampletag{font-weight:900;padding:3px 5px;border-radius:5px;background:#2b424d;display:inline-block;margin-left:4px}
+@media(max-width:850px){.layout{grid-template-columns:minmax(0,1fr) minmax(280px,330px);gap:14px}main{padding:16px 12px 30px}.board-wrap{padding:8px}.board{border-width:5px}.pan{padding:12px}}
+@media(max-width:690px){.layout{grid-template-columns:1fr}.right{display:grid;grid-template-columns:1fr 1fr;gap:10px}.status{grid-column:1/-1;margin-bottom:0}.pan{margin:0}.analysis{grid-column:1/-1}.guide{margin-top:10px}.board-wrap{max-width:600px;margin:auto}.mast{margin-bottom:12px}}
+@media(max-width:460px){.right{display:block}.pan{margin-bottom:10px}.status{margin-bottom:10px}main{padding:12px 10px 25px}.board-wrap{padding:6px;border-radius:14px}.board{border-width:5px}.sq .hm{font-size:8px}.catpiece .badge-cat{right:-7px;font-size:8px}.player{padding:8px;gap:2px 6px}.player b{font-size:12px}.player small{font-size:10px}.pill{font-size:9px;padding:5px 8px}}
+</style>
+</head>
+<body><main>
+<header class="mast"><div><div class="brand">boop<span class="dot">.</span></div><p class="tagline">A cozy little game of very competitive cats</p></div><div class="pill">Local MCTS AI</div></header>
+<div class="layout">
+<section class="left" aria-label="Game board">
+<div class="players"><div class="player active" id="player0"><span class="avatar">♟</span><b>You · Cream</b><small id="supply0">8 kittens · 0 cats</small></div><div class="player" id="player1"><span class="avatar blu">♟</span><b>AI · Slate</b><small id="supply1">8 kittens · 0 cats</small></div></div>
+<div class="board-wrap"><div class="board" id="board" aria-label="Six by six game board"></div></div>
+<div class="pick-piece"><label>Place a piece <span id="turnLabel" class="muted"></span></label><div class="pieces"><button class="piece-btn selected" id="selectKit" type="button">Kitten <span id="kitAvailable">8</span></button><button class="piece-btn" id="selectCat" type="button">Cat <span id="catAvailable">0</span></button></div></div>
+</section>
+<section class="right">
+<div class="status" aria-live="polite"><strong id="statusTitle">Your turn</strong><p id="statusInfo">Place a kitten on an empty quilt square. Adjacent kittens are pushed away—boop!</p><div id="choices" class="choice-list" hidden></div></div>
+<div class="pan"><h2>Play</h2><div class="buttons"><button class="btn primary" id="newGame">New game</button><button class="btn" id="undo">Undo turn</button></div><div class="settings"><label for="difficulty">Computer strength</label><select id="difficulty"><option value="180">Quick · 180</option><option value="480" selected>Thoughtful · 480</option><option value="1050">Deep · 1,050</option></select></div><div class="buttons" style="margin-top:10px"><button class="btn" id="first">Let AI go first</button></div></div>
+<div class="pan analysis"><h2>Position analysis</h2>
+<label class="toggle"><input id="toggleOdds" type="checkbox" checked>Win probability estimate</label>
+<label class="toggle"><input id="toggleCream" type="checkbox" checked>Cream's best-move heatmap <i class="swatch"></i></label>
+<label class="toggle"><input id="toggleSlate" type="checkbox">Slate's best-move heatmap <i class="swatch blue"></i></label>
+<div id="oddsSection"><div class="statrow"><span id="oddsLabel">Cream to move</span><small id="oddsAccuracy">Monte Carlo estimate</small></div><div class="meter"><i class="p0" id="barCream" style="width:50%"></i><i class="p1" id="barSlate" style="width:50%"></i></div><div class="forecast"><span id="chanceCream">Cream 50%</span><span id="chanceSlate">Slate 50%</span></div></div>
+<div class="simbox"><div class="statrow"><b>Completed playouts</b><small>since last move</small></div><div class="simcount"><span>Cream perspective</span><strong id="runs0">0</strong></div><div class="simcount opp"><span>Slate perspective</span><strong id="runs1">0</strong></div><div class="split"><button class="btn" id="more250">+250 each</button><button class="btn" id="more1000">+1,000 each</button></div><div class="buttons" style="margin-top:7px"><button class="btn" id="stop" disabled>Stop analysis</button></div><div class="busy" id="analysisBusy" aria-live="polite">Preparing estimates…</div></div>
+<div id="recommendations" class="recs"></div><p class="mininote">Heatmaps show the strongest evaluated placement and piece type for each square. Counts are actual Monte Carlo continuations. Estimates are <b>not</b> perfect-play odds. Short playouts can end in heuristic evaluations.</p>
+</div>
+</section>
+</div>
+<details class="guide"><summary>How to play and interpret the analysis</summary><p>Each player starts with 8 kittens on a 6×6 quilt. Place a kitten on any empty square. It pushes every adjacent kitten one square outward, unless the destination is blocked. Pieces pushed over an edge return to their owner's supply. A cat pushes kittens and cats, but kittens cannot move cats.</p><p>Make three of your own pieces in a row, horizontally, vertically or diagonally, to remove that group and upgrade its kittens into adult cats. You choose which group to graduate if several qualify. Having all eight active pieces on the board lets you return one to your supply (upgrading a kitten if chosen). Win by making three adult cats in a row, or having all eight adult cats on the quilt.</p><p>The heatmap colors indicate approximate best follow-up outcomes, not which empty cell is guaranteed to win. Showing both perspectives is counterfactual: it evaluates what each side could do if it moved next. <b>More playouts</b> continues the existing trees rather than discarding earlier simulations. The win estimate uses the tree for the side actually to move.</p></details>
+<footer class="foot">Independent educational implementation of the original two-player boop. rules. All computation happens in this tab; no API, external script, login or data collection. Source: <a href="https://rules.dized.com/game/3_U-I3tNQyW4X0aaWER7YA/boop" style="color:#c8dfe0">publisher-verified rules</a>.</footer>
+</main>
+<script>
+(function(){'use strict';
+const N=36, HUMAN=0, COMPUTER=1, ADJ=[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+const LINES=[];
+for(let r=0;r<6;r++)for(let c=0;c<6;c++)for(const [dr,dc] of [[0,1],[1,0],[1,1],[1,-1]]){
+ const rr=r+2*dr,cc=c+2*dc;if(rr>=0&&rr<6&&cc>=0&&cc<6)LINES.push([r*6+c,(r+dr)*6+c+dc,rr*6+cc]);
+}
+const coord=i=>'ABCDEF'[i%6]+(Math.floor(i/6)+1);
+const owner=v=>v? (v>2?1:0):-1;const adult=v=>v%2===0;
+const piece=(player,kind)=>1+2*player+kind;
+const fresh=(starter=0)=>({b:new Uint8Array(36),g:[0,0],turn:starter,done:-1,ply:0});
+function pool(s,p){let onKit=0,onCat=0;for(const x of s.b){if(owner(x)===p){if(adult(x))onCat++;else onKit++;}}return{kit:8-s.g[p]-onKit,cat:s.g[p]-onCat,onKit,onCat,on:onKit+onCat};}
+function clone(s){return{b:s.b.slice(),g:s.g.slice(),turn:s.turn,done:s.done,ply:s.ply};}
+function boop(s,index,kind){const who=s.turn;const b=s.b.slice();b[index]=piece(who,kind);const out=b.slice();const r=index/6|0,c=index%6;
+ for(const [dr,dc] of ADJ){const ar=r+dr,ac=c+dc;if(ar<0||ar>5||ac<0||ac>5)continue;const i=ar*6+ac,v=b[i];if(!v||(kind===0&&adult(v)))continue;const br=ar+dr,bc=ac+dc;
+  if(br<0||br>5||bc<0||bc>5){out[i]=0;continue;}const j=br*6+bc;if(!b[j]){out[i]=0;out[j]=v;}
+ }return out;
+}
+function ownTriples(b,p){const found=[];for(const line of LINES)if(line.every(i=>owner(b[i])===p))found.push(line);return found;}
+function isWinner(b,p){for(const l of LINES)if(l.every(i=>b[i]===piece(p,1)))return true;
+ let n=0;for(const x of b)if(x===piece(p,1))n++;return n===8;
+}
+function labelForChoice(variant,b,p){if(variant.mode==='line'){const num=variant.cells.filter(i=>!adult(b[i])).length;return 'Graduate '+variant.cells.map(coord).join(' · ')+(num?` · ${num} kitten${num!==1?'s':''} → cats`:' · return cats');}
+ if(variant.mode==='eight'){const i=variant.cells[0];return (adult(b[i])?'Return cat ':'Graduate kitten ')+coord(i)+' to your supply';}
+ return 'Continue';}
+function moveOptions(s,index,kind){if(s.done!==-1||index<0||index>=N||s.b[index])return[];const avail=pool(s,s.turn);if((kind===0?avail.kit:avail.cat)<1)return[];
+ const b=boop(s,index,kind),p=s.turn;const base={b,g:s.g.slice(),turn:1-p,done:-1,ply:s.ply+1};
+ if(isWinner(b,p)){const next={...base,done:p};return[{s:next,at:index,kind,mode:'win',cells:[],label:'Win!',raw:b}];}
+ const lines=ownTriples(b,p);const nOn=b.reduce((a,v)=>a+(owner(v)===p),0);
+ const picks=lines.map(cells=>({mode:'line',cells}));
+ if(nOn===8)for(let i=0;i<36;i++)if(owner(b[i])===p)picks.push({mode:'eight',cells:[i]});
+ if(!picks.length)return[{s:base,at:index,kind,mode:'none',cells:[],label:'Continue',raw:b}];
+ const ans=[];for(const v of picks){const nb=b.slice(),gg=s.g.slice();for(const i of v.cells){if(!adult(nb[i]))gg[p]++;nb[i]=0;}
+ ans.push({s:{b:nb,g:gg,turn:1-p,done:-1,ply:s.ply+1},at:index,kind,mode:v.mode,cells:v.cells,label:labelForChoice(v,b,p),raw:b});}
+ return ans;
+}
+function heuristic(s,p){if(s.done===p)return 800;if(s.done===1-p)return -800;
+ const opp=1-p;let val=(s.g[p]-s.g[opp])*18;
+ for(let i=0;i<36;i++){const v=s.b[i];if(!v)continue;const vown=owner(v);const r=i/6|0,c=i%6;const center=2.5-(Math.abs(r-2.5)+Math.abs(c-2.5))/2;
+ val+=(vown===p?1:-1)*(center*(adult(v)?2.1:1.2)+(adult(v)?2.5:.8));}
+ for(const l of LINES){let a=0,z=0,ca=0,cz=0;for(const i of l){const x=s.b[i];if(owner(x)===p){a++;if(adult(x))ca++;}else if(owner(x)===opp){z++;if(adult(x))cz++;}}
+  if(a&&z)continue;
+  if(a===2)val+=ca===2?14:ca===1?6:3.5;
+  if(z===2)val-=cz===2?16:cz===1?7:4;
+  if(a===1)val+=ca?1.4:.35;
+  if(z===1)val-=cz?1.5:.4;
+ }
+ return val;
+}
+const sigmoid=v=>1/(1+Math.exp(-Math.max(-8,Math.min(8,v/40))));
+function prior(s,p){return s.done===p?1:s.done===1-p?0:sigmoid(heuristic(s,p));}
+function allMoves(s){if(s.done!==-1)return[];const available=pool(s,s.turn),types=[];if(available.kit)types.push(0);if(available.cat)types.push(1);let a=[];
+ for(let i=0;i<36;i++){if(s.b[i])continue;for(const t of types){const opts=moveOptions(s,i,t);for(const m of opts){m.prior=prior(m.s,s.turn);a.push(m);}}}
+ // Every open square gets a chance before sampling secondary actions.
+ const bestPerCell=new Map();for(const m of a){const prev=bestPerCell.get(m.at);if(!prev||prev.prior<m.prior)bestPerCell.set(m.at,m);}
+ const leaders=[...bestPerCell.values()].sort((x,y)=>y.prior-x.prior);
+ const leadSet=new Set(leaders);const extra=a.filter(m=>!leadSet.has(m)).sort((x,y)=>y.prior-x.prior);
+ return leaders.concat(extra);
+}
+function randomCandidates(s,n=6){const available=pool(s,s.turn);const types=[];if(available.kit)types.push(0);if(available.cat)types.push(1);if(!types.length)return[];
+ const empty=[];for(let i=0;i<36;i++)if(!s.b[i])empty.push(i);if(!empty.length)return[];
+ const picked=[];const seen=new Set();for(let z=0;z<n;z++){const at=empty[Math.random()*empty.length|0],kind=types[Math.random()*types.length|0];const key=at*2+kind;if(seen.has(key))continue;seen.add(key);const out=moveOptions(s,at,kind);if(out.length){let chosen=out[0],best=-Infinity;for(const o of out){const h=heuristic(o.s,s.turn)+Math.random()*11;if(h>best){best=h;chosen=o;}}picked.push(chosen);}}
+ return picked;
+}
+function rollout(s,p){let cur=s;for(let depth=0;depth<52;depth++){
+  if(cur.done!==-1)return cur.done===p?1:0;
+  const ms=randomCandidates(cur,depth<4?9:6);if(!ms.length)return sigmoid(heuristic(cur,p));
+  let best=null,max=-Infinity;for(const m of ms){const h=heuristic(m.s,cur.turn)+(-Math.log(-Math.log(Math.max(1e-9,Math.random()))))*13;if(h>max){max=h;best=m;}}
+  cur=best.s;
+ }
+ return sigmoid(heuristic(cur,p));
+}
+function newTree(s){return{state:clone(s),player:s.turn,visits:0,sum:0,moves:null,children:[],step:null};}
+function iterate(root){const path=[root];let n=root;
+ while(n.state.done===-1){if(!n.moves)n.moves=allMoves(n.state);if(n.moves.length===0)break;
+  // Fully visit candidate placement cells before deeper branching at the root.
+  const minimum=n===root?new Set(n.moves.map(m=>m.at)).size:0;
+  const budget=Math.min(n.moves.length,n===root?minimum+Math.ceil(2.3*Math.sqrt(n.visits+1)):Math.ceil(1.8*Math.pow(n.visits+1,.56)));
+  if(n.children.length<budget){const m=n.moves[n.children.length];const child={state:m.s,player:root.player,visits:0,sum:0,moves:null,children:[],step:m};n.children.push(child);n=child;path.push(n);break;}
+  let pick=null,max=-Infinity;for(const child of n.children){const priorRoot=(n.state.turn===root.player)?child.step.prior:1-child.step.prior;const q=(child.sum+priorRoot*2)/(child.visits+2);const x=n.state.turn===root.player?q:1-q;const exploration=1.1*Math.sqrt(Math.log(n.visits+2)/(child.visits+.75));const value=x+exploration;
+   if(value>max){max=value;pick=child;}}
+  if(!pick)break;n=pick;path.push(n);
+ }
+ const v=n.state.done!==-1?(n.state.done===root.player?1:0):rollout(n.state,root.player);
+ for(const x of path){x.visits++;x.sum+=v;}
+}
+function bestAction(root){if(root.state.done!==-1)return null;if(!root.moves)root.moves=allMoves(root.state);const wins=root.moves.filter(m=>m.s.done===root.player);if(wins.length)return wins[0];
+ if(!root.children.length)return root.moves[0];
+ return root.children.slice().sort((a,b)=>b.visits-a.visits||((b.sum+2*b.step.prior)/(b.visits+2)-(a.sum+2*a.step.prior)/(a.visits+2)))[0].step;
+}
+function mapSquares(root){if(!root.moves)root.moves=allMoves(root.state);const counts=new Map(),results=new Map();for(const c of root.children){counts.set(c.step,(c.visits));results.set(c.step,(c.sum+3*c.step.prior)/(c.visits+3));}
+ const byCell=new Map();for(const m of root.moves){const confidence=results.get(m)??m.prior;const candidate={at:m.at,kind:m.kind,score:confidence,visits:counts.get(m)||0,move:m};const prev=byCell.get(m.at);if(!prev||candidate.score>prev.score)byCell.set(m.at,candidate);}
+ return [...byCell.values()].sort((a,b)=>b.score-a.score);
+}
+// Expose pure core for reproducible automated rule testing.
+window.__boopCore={fresh,pool,boop,moveOptions,allMoves,ownTriples,isWinner,heuristic,rollout,newTree,iterate,bestAction,mapSquares};
+const $=id=>document.getElementById(id);const boardElement=$('board');const squares=[];
+for(let i=0;i<36;i++){const cell=document.createElement('button');cell.type='button';cell.className='sq';cell.title=coord(i);cell.setAttribute('aria-label',coord(i));cell.addEventListener('click',()=>humanPlace(i));boardElement.appendChild(cell);squares.push(cell);}
+let game=fresh(),selectedKind=0,pending=null,history=[],last=-1,thinking=false,aiSeq=0,analysisSeq=0,trees=[null,null],targets=[0,0],analysisRunning=false,lastOdds=0.5;
+let prefs={odds:true,cream:true,slate:false};
+function status(a,b){$('statusTitle').textContent=a;$('statusInfo').textContent=b;}
+function catMarkup(x){const who=owner(x);return '<span class="catpiece '+(who?'opp ':'')+(adult(x)?'adult':'kit')+'"><span class="eyes"><i></i><i></i></span><span class="nose"></span>'+(adult(x)?'<span class="badge-cat">CAT</span>':'')+'</span>';}
+function getRoots(){if(game.done!==-1)return;for(let p=0;p<2;p++)if(!trees[p]){const test=clone(game);test.turn=p;trees[p]=newTree(test);}}
+function render(){const snapshot=pending?pending[0].raw:game.b;const turn=game.turn;const pc=pool(game,0),op=pool(game,1);
+ $('supply0').textContent=`${pc.kit} kittens · ${pc.cat} cats in supply`;
+ $('supply1').textContent=`${op.kit} kittens · ${op.cat} cats in supply`;
+ $('player0').classList.toggle('active',turn===0&&game.done===-1);$('player1').classList.toggle('active',turn===1&&game.done===-1);
+ $('kitAvailable').textContent=pc.kit;$('catAvailable').textContent=pc.cat;
+ $('turnLabel').textContent=(turn===0&&game.done===-1&&!pending)?'· your turn':'';
+ if(pc.kit===0&&selectedKind===0&&pc.cat>0)selectedKind=1;
+ if(pc.cat===0&&selectedKind===1&&pc.kit>0)selectedKind=0;
+ $('selectKit').classList.toggle('selected',selectedKind===0);$('selectCat').classList.toggle('selected',selectedKind===1);
+ $('selectKit').disabled=game.done!==-1||turn!==0||thinking||!!pending||pc.kit===0;
+ $('selectCat').disabled=game.done!==-1||turn!==0||thinking||!!pending||pc.cat===0;
+ for(let i=0;i<36;i++){const c=squares[i],v=snapshot[i];c.innerHTML=v?catMarkup(v):'';c.classList.toggle('last',i===last);c.classList.toggle('highlight',pending?.some(o=>o.cells.includes(i))||false);
+  c.disabled=game.done!==-1||turn!==0||thinking||!!pending||!!v;c.setAttribute('aria-label',coord(i)+(v?' occupied':''));}
+ $('undo').disabled=!history.length;$('first').disabled=!!game.ply||thinking;
+ drawAnalysis();
+}
+function stopAnalysis(clear=false){analysisSeq++;analysisRunning=false;targets=[0,0];if(clear){trees=[null,null];lastOdds=.5;}updateBusy();}
+function updateBusy(){const active=analysisRunning;$('stop').disabled=!active;$('analysisBusy').textContent=thinking?'AI searching…':active?'Sampling more games; you can still play.':'Tap +250 or +1,000 to refine the heatmap.';}
+function accept(s,m){stopAnalysis(true);history.push(clone(game));game=s;last=m.at;pending=null;
+ if(game.done!==-1){status(game.done===0?'You win!':'The AI wins!',game.done===0?'Three grown cats (or eight on the bed). Well played!':'The cats got the better of you. Try another game!');render();return;}
+ if(game.turn===COMPUTER){status('Computer is thinking…','The AI is searching its next boop.');render();startAI();}
+ else{status('Your turn','Choose a kitten or cat, then tap an empty quilt square.');render();startAnalysis(100);}
+}
+function humanPlace(at){if(pending||thinking||game.done!==-1||game.turn!==0)return;const variants=moveOptions(game,at,selectedKind);if(!variants.length)return;
+ if(variants.length===1){accept(variants[0].s,variants[0]);return;}
+ pending=variants;status('Choose what to graduate','Your placement booped the nearby pieces. Several valid scoring choices are available.');render();
+ const choiceEl=$('choices');choiceEl.hidden=false;choiceEl.innerHTML='';variants.forEach((m,j)=>{const btn=document.createElement('button');btn.className='btn';btn.textContent=m.label;btn.addEventListener('click',()=>{choiceEl.hidden=true;accept(m.s,m);});choiceEl.appendChild(btn);});
+}
+function runAI(budget){thinking=true;aiSeq++;const seq=aiSeq;stopAnalysis(false);const root=newTree(game);let target=budget;
+ function batch(){if(seq!==aiSeq)return;const start=performance.now();while(root.visits<target&&performance.now()-start<10)iterate(root);
+  status('Computer is thinking…',`${root.visits.toLocaleString()} / ${target.toLocaleString()} search playouts completed`);
+  if(root.visits<target)setTimeout(batch,0);else{thinking=false;const action=bestAction(root);if(action)accept(action.s,action);else{status('No moves available','Start a new game to play again.');render();}}}
+ setTimeout(batch,60);
+}
+function startAI(){if(game.done!==-1||game.turn!==COMPUTER)return;runAI(Number($('difficulty').value));}
+function startAnalysis(base=100){if(thinking||game.done!==-1||pending)return;getRoots();targets=analysisRunning?[targets[0]+base,targets[1]+base]:[trees[0].visits+base,trees[1].visits+base];if(analysisRunning)return;
+ analysisRunning=true;const token=++analysisSeq;updateBusy();function batch(){if(token!==analysisSeq)return;const t=performance.now();while(performance.now()-t<10){let who=trees[0].visits<targets[0]?0:trees[1].visits<targets[1]?1:-1;
+   if(who===-1)break;iterate(trees[who]);}
+  drawAnalysis();if(trees[0].visits<targets[0]||trees[1].visits<targets[1])setTimeout(batch,0);else{analysisRunning=false;updateBusy();}}
+ setTimeout(batch,0);
+}
+function pct(v){return Math.round(v*100)+'%';}
+function draws(){return game.done!==-1;}
+function drawAnalysis(){const done=game.done!==-1;if(!done)getRoots();const r0=trees[0],r1=trees[1];
+ $('runs0').textContent=(r0?.visits||0).toLocaleString();$('runs1').textContent=(r1?.visits||0).toLocaleString();
+ $('oddsSection').hidden=!prefs.odds;
+ if(done){lastOdds=game.done===0?1:0;}
+ else{const root=trees[game.turn];if(root?.visits){const fromTurn=root.sum/root.visits;lastOdds=game.turn===0?fromTurn:1-fromTurn;}else{lastOdds=prior(game,0);}}
+ $('barCream').style.width=pct(lastOdds);$('barSlate').style.width=pct(1-lastOdds);
+ $('chanceCream').textContent='Cream '+pct(lastOdds);$('chanceSlate').textContent='Slate '+pct(1-lastOdds);
+ $('oddsLabel').textContent=done?'Game finished':game.turn===0?'Cream to move':'Slate to move';
+ $('oddsAccuracy').textContent=done?'Final result':((trees[game.turn]?.visits||0).toLocaleString()+' playouts');
+ let lists=[r0&&r0.moves?mapSquares(r0):[],r1&&r1.moves?mapSquares(r1):[]];
+ const maps=lists.map(a=>new Map(a.map(m=>[m.at,m])));
+ const ranks=lists.map(arr=>new Map(arr.slice(0,3).map((x,i)=>[x.at,i+1])));
+ for(let i=0;i<36;i++){const c=squares[i];c.querySelectorAll('.heat,.hm,.ptag').forEach(e=>e.remove());if(game.b[i]||done||pending)continue;
+  const h=maps[0].get(i),a=maps[1].get(i);const p0=prefs.cream&&h,p1=prefs.slate&&a;
+  if(!p0&&!p1)continue;const heat=document.createElement('span');heat.className='heat';const alpha0=p0?Math.max(.15,Math.min(.78,.22+(h.score-.3)*1.03)):0,alpha1=p1?Math.max(.15,Math.min(.78,.22+(a.score-.3)*1.03)):0;
+  heat.style.background=(p0&&p1)?`linear-gradient(90deg,rgba(233,159,74,${alpha0}) 0 50%,rgba(82,156,195,${alpha1}) 50% 100%)`:p0?`rgba(233,159,74,${alpha0})`:`rgba(82,156,195,${alpha1})`;
+  c.prepend(heat);
+  c.title=coord(i)+(p0?` | cream: ${pct(h.score)}, ${h.visits} playouts, ${h.kind?'cat':'kitten'}`:'')+(p1?` | slate: ${pct(a.score)}, ${a.visits} playouts, ${a.kind?'cat':'kitten'}`:'');
+  if(p0&&ranks[0].has(i)){const t=document.createElement('b');t.className='hm';t.textContent='#'+ranks[0].get(i);c.append(t);}
+  if(p1&&ranks[1].has(i)){const t=document.createElement('b');t.className='hm opp';t.textContent='#'+ranks[1].get(i);c.append(t);}
+ }
+ const rec=$('recommendations');rec.innerHTML='';for(let p=0;p<2;p++){if(!(p===0?prefs.cream:prefs.slate)||!lists[p].length||done)continue;
+  const title=document.createElement('div');title.className='rec-title'+(p?' opp':'');title.textContent=(p?'Slate':'Cream')+' · top placements';rec.append(title);
+  lists[p].slice(0,3).forEach((m,j)=>{const el=document.createElement('div');el.className='rec'+(p?' opp':'');const ch=m.kind?'Cat':'Kitten';el.innerHTML=`<span class="rank">${j+1}</span><span class="move">${ch} ${coord(m.at)}</span><span class="muted">${m.visits} visits</span><span class="score">${pct(m.score)}</span>`;rec.append(el);});}
+}
+function reset(starter=0){aiSeq++;thinking=false;stopAnalysis(true);game=fresh(starter);selectedKind=0;pending=null;history=[];last=-1;$('choices').hidden=true;
+ if(starter===1){status('AI goes first','The computer is choosing its opening move.');render();startAI();}
+ else{status('Your turn','Place a kitten on an empty quilt square. Adjacent kittens are pushed outward—boop!');render();startAnalysis(100);}}
+$('selectKit').onclick=()=>{selectedKind=0;render();};$('selectCat').onclick=()=>{selectedKind=1;render();};
+$('toggleOdds').onchange=e=>{prefs.odds=e.target.checked;drawAnalysis();};
+$('toggleCream').onchange=e=>{prefs.cream=e.target.checked;drawAnalysis();};
+$('toggleSlate').onchange=e=>{prefs.slate=e.target.checked;drawAnalysis();};
+$('more250').onclick=()=>{if(game.done===-1&&!thinking&&!pending)startAnalysis(250);};
+$('more1000').onclick=()=>{if(game.done===-1&&!thinking&&!pending)startAnalysis(1000);};
+$('stop').onclick=()=>{stopAnalysis();};
+$('newGame').onclick=()=>reset(0);$('first').onclick=()=>reset(1);
+$('undo').onclick=()=>{if(!history.length)return;aiSeq++;thinking=false;stopAnalysis(true);pending=null;$('choices').hidden=true;
+ let old=history.pop();while(old.turn!==0&&history.length)old=history.pop();game=old;last=-1;status('Your turn','Last exchange undone. Try another placement.');render();startAnalysis(100);};
+reset();
+})();
+</script>
+</body>
+</html>
