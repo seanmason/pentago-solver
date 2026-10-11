@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pentago · Play against MCTS</title>
+<title>Pentago · MCTS with move analysis</title>
 <style>
 :root{color-scheme:dark;--bg:#0b101b;--panel:#151e2c;--panel2:#1b2839;--border:#2e4056;--muted:#a9b8c9;--text:#edf2fa;--gold:#f0c37b;--ivory:#ffefcf;--dark:#293544}
 *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 15% 5%,#1d2b3d 0,transparent 55%),var(--bg);font:15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;color:var(--text)}
@@ -11,11 +11,60 @@
 .boardframe{padding:11px;border:1px solid #394b5c;border-radius:19px;background:linear-gradient(145deg,#2d3d4d,#131e2e);box-shadow:0 22px 55px #0006}.board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;aspect-ratio:1}.quad{background:linear-gradient(150deg,#9c7756,#6e4b36);border:2px solid #ba9372;box-shadow:inset 0 0 0 3px #513d31,0 2px 5px #0008;border-radius:12px;position:relative;min-width:0;padding:7px;display:grid;grid-template-rows:minmax(0,1fr) auto}.squares{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:4px;min-height:0}.cell{border:0;padding:0;aspect-ratio:1;min-width:0;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 47% 45%,#422c23 0,#5c3b2b 55%,#785541 70%,#a77d58 100%);box-shadow:inset 0 2px 6px #0009,0 1px 0 #d8b38f77;cursor:pointer;position:relative;touch-action:manipulation}.cell:not(:disabled):hover{outline:2px solid #f4c884}.cell:focus-visible,.twist:focus-visible,.btn:focus-visible{outline:3px solid #f6dba1;outline-offset:2px}.cell:disabled{cursor:default}.disc{display:block;width:85%;height:85%;border-radius:50%;background:radial-gradient(circle at 32% 24%,white 0,#f9edcf 42%,#a9a087 78%,#837356 100%);box-shadow:inset -3px -5px 7px #0003,0 2px 6px #0008}.disc.ai{background:radial-gradient(circle at 30% 22%,#a4b6c8 0,#607487 15%,#243546 53%,#0b121d 92%);box-shadow:inset -4px -5px 6px #000a,0 2px 5px #0008}.cell.recent .disc{outline:2px solid var(--gold);outline-offset:2px}.cell.win .disc{box-shadow:0 0 0 3px #ffc76c,0 0 16px 6px #ffc76c66}.twistrow{display:flex;justify-content:space-around;align-items:center;height:32px;gap:5px;margin-top:3px}.quadlabel{font-size:10px;color:#e8d2b5;font-weight:800;opacity:.68}.twist{min-width:39px;height:29px;border:1px solid #f1d7b27a;color:#f8ead6;background:#4d3529;border-radius:7px;font-size:21px;line-height:1;cursor:pointer}.twist:not(:disabled):hover{background:#775239}.twist:disabled{opacity:.26;cursor:default}.quad.rotate-ready{border-color:#f1c781;box-shadow:0 0 0 2px #f6c37c28,inset 0 0 0 3px #6d4b36}
 .notice{padding:14px 16px;background:var(--panel);border:1px solid var(--border);border-radius:13px;margin-bottom:14px;min-height:88px}.notice strong{display:block;font-size:17px;margin-bottom:4px}.notice span{color:var(--muted);font-size:13px}.notice .meter{height:3px;background:#243346;border-radius:4px;overflow:hidden;margin-top:9px;display:none}.notice.thinking .meter{display:block}.fill{height:100%;width:0%;background:var(--gold);transition:width .15s}.controls{background:var(--panel);border:1px solid var(--border);padding:16px;border-radius:13px}.ctlhead{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:9px}.segments{display:flex;gap:4px;padding:4px;background:#0b1421;border-radius:9px;margin-bottom:14px}.segments button{font:inherit;flex:1;padding:8px 3px;color:var(--muted);border:0;background:transparent;border-radius:7px;font-size:12px;cursor:pointer}.segments button.sel{color:#121821;background:var(--gold);font-weight:800}.setting{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;font-size:13px}.setting label{color:var(--muted)}select{font:inherit;background:#0d1724;border:1px solid var(--border);color:var(--text);padding:7px 8px;border-radius:8px;max-width:145px}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{font:600 13px system-ui;border:1px solid #5e6e81;background:#223247;color:var(--text);border-radius:9px;padding:10px 12px;cursor:pointer;flex:1;white-space:nowrap}.btn.primary{background:var(--gold);color:#152032;border-color:var(--gold)}.btn:disabled{opacity:.4;cursor:default}.btn:not(:disabled):hover{filter:brightness(1.12)}.rules{margin-top:14px;border:1px solid var(--border);border-radius:13px;background:var(--panel);padding:14px 17px;color:var(--muted);font-size:13px}.rules summary{font-size:13px;font-weight:700;color:var(--text);cursor:pointer}.rules p{margin:9px 0 0}.footer{font-size:11px;color:#91a1b1;margin:15px 2px 0;line-height:1.55}.statline{margin-top:10px;color:#b7c4d3;font-size:11px;display:flex;justify-content:space-between;gap:10px}.statusdot{display:inline-block;width:7px;height:7px;background:#e7bc75;border-radius:50%;margin-right:6px}
 @media(max-width:750px){.shell{padding:14px 12px 26px}.game{grid-template-columns:1fr;gap:15px}.aside{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}.notice{margin:0}.controls{grid-row:span 2}.rules{margin:0}.tag{display:none}}@media(max-width:480px){.aside{display:block}.notice{margin-bottom:10px}.rules{margin-top:10px}.boardframe{padding:7px;border-radius:12px}.board{gap:6px}.quad{padding:4px;border-radius:8px}.squares{gap:3px}.twistrow{height:27px;margin-top:2px}.twist{height:25px;min-width:32px;font-size:18px}.scorebar{gap:7px}.player{padding:8px}.brand{font-size:31px}}
+
+/* Analysis and overlays */
+[hidden]{display:none!important}
+.analysis-panel{margin-top:14px;background:var(--panel);border:1px solid var(--border);border-radius:13px;padding:15px}
+.analysis-header{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px}
+.analysis-header h2{font-size:14px;margin:0;letter-spacing:.02em}
+.analysis-meta{font-size:10px;color:var(--muted);text-align:right}
+.analysis-switches{display:grid;grid-template-columns:1fr;gap:10px;margin:0 0 14px}
+.analysis-switch{display:flex;gap:9px;align-items:center;font-size:13px;color:var(--text);cursor:pointer;min-height:25px}
+.analysis-switch input{width:17px;height:17px;margin:0;accent-color:var(--gold);cursor:pointer}
+.swatch{width:11px;height:11px;border-radius:3px;flex-shrink:0;display:inline-block;margin-left:auto}
+.swatch.ivory{background:#e8b96c}.swatch.onyx{background:#70bde9}
+.odds{margin-bottom:15px}.oddshead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:11px;color:var(--muted)}
+.oddshead strong{color:var(--text)}.oddsbar{display:flex;height:13px;overflow:hidden;border-radius:5px;background:#29394a}
+.oddsbar>div{transition:width .25s;min-width:0}.oddsbar .white{background:#e9c78c}.oddsbar .black{background:#79bde9}.oddsbar .draw{background:#7e8496}
+.oddsnumbers{display:flex;justify-content:space-between;gap:7px;font-size:13px;font-weight:750;margin-top:6px}.oddsnumbers span:last-child{color:#91cbed}.oddsnote{font-size:10.5px;color:var(--muted);margin:5px 0 0}
+.heatnote{font-size:11px;color:var(--muted);line-height:1.45;margin:8px 0 0}
+.heatlegend{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);margin-bottom:11px}
+.heatgradient{width:66px;height:7px;border-radius:4px;background:linear-gradient(to right,#324357,#d2a35e)}
+.picks{display:grid;gap:12px}.pickgroup h3{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}.pickgroup h3 strong{color:#f3ca89}
+.pickgroup.onyx h3 strong{color:#8fcdf2}
+.pickrow{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text);margin:5px 0;line-height:1.25}
+.pickno{min-width:20px;height:20px;display:grid;place-items:center;border-radius:6px;background:#394252;font-size:11px;font-weight:800}
+.pickloc{min-width:48px;font-weight:700}.pickdesc{flex:1;color:var(--muted);font-size:11px}.pickpct{color:#e6c28c;font-size:11px;font-weight:800;white-space:nowrap}
+.pickgroup.onyx .pickpct{color:#8fcdf2}
+.analysis-state{color:var(--muted);font-size:11px;margin:5px 0 0}
+.cell .heat-layer{position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:0;background:transparent;box-shadow:inset 0 0 0 1px #ffffff0e}
+.cell .ranktags{position:absolute;top:0;right:-2px;display:flex;flex-direction:column;gap:1px;pointer-events:none;z-index:2}
+.ranktag{font:800 clamp(8px,1.6vw,11px)/1 system-ui;min-width:13px;min-height:13px;display:grid;place-items:center;border-radius:4px;color:#20190f;background:#e8bc78;box-shadow:0 1px 3px #0009}
+.ranktag.onyx{background:#8fd0f6;color:#142231}
+.cell .disc{z-index:1}.twist.hint-rotation{border-color:#f5d68c;box-shadow:0 0 0 2px #e8c17a88;background:#815734}.twist.hint-rotation::after{content:'★';font-size:9px;position:absolute;transform:translate(4px,-6px);color:#ffde94}
+@media(max-width:750px){.aside{display:flex;flex-direction:column}.notice,.controls,.analysis-panel,.rules{width:100%;margin:0}.analysis-panel,.rules{margin-top:12px}}
+@media(max-width:480px){.cell .ranktags{right:-1px}.ranktag{min-width:11px;min-height:11px;font-size:8px}.analysis-switches{grid-template-columns:1fr 1fr}.analysis-switch:first-child{grid-column:1/-1}}
+
 </style>
 </head>
 <body>
 <div class="shell"><header class="top"><div><div class="eyebrow">A game of shifting geometry</div><div class="brand">PENTAGO</div><div class="subtitle">Five in a row. Four rotating quadrants. One clever opponent.</div></div><div class="tag">ON-DEVICE MONTE CARLO AI</div></header>
-<main class="game"><section class="left"><div class="scorebar"><div class="player active" id="pHuman"><span class="marble"></span><div><div class="pname">You · Ivory</div><div class="psmall" id="humanState">Your turn</div></div></div><div class="player" id="pAI"><span class="marble ai"></span><div><div class="pname">Computer · Onyx</div><div class="psmall" id="aiState">Waiting</div></div></div></div><div class="boardframe"><div id="board" class="board" role="group" aria-label="Pentago board, four rotating quadrants"></div></div><div class="statline"><span id="moves">0 marbles placed</span><span id="searchStat">MCTS · Ready</span></div></section><aside class="aside"><div class="notice" id="notice" role="status" aria-live="polite"><strong id="statusTitle">Your move</strong><span id="statusDetail">Tap any empty circle to place an ivory marble.</span><div class="meter"><div class="fill" id="meterFill"></div></div></div><div class="controls"><div class="ctlhead">Computer strength</div><div class="segments" id="levels"><button data-level="0">Relaxed</button><button data-level="1" class="sel">Strong</button><button data-level="2">Expert</button></div><div class="setting"><label for="start">First player</label><select id="start"><option value="human">You</option><option value="ai">Computer</option></select></div><div class="actions"><button class="btn primary" id="newGame">New game</button><button class="btn" id="undo" disabled>Take back</button></div><div class="statline"><span>AI runs in your browser</span><span>No server needed</span></div></div><details class="rules"><summary>How to play</summary><p>On your turn, <b>place</b> one ivory marble in an empty circle, then <b>rotate</b> any quadrant 90° using its ↶ or ↷ arrow. The first player with five in an unbroken horizontal, vertical, or diagonal line wins. A five-in-a-row made by placing a marble wins immediately, with no rotation required. If a rotation gives both players five, it is a draw.</p><p>“Take back” returns to your previous turn. The computer uses heuristic-guided Monte Carlo Tree Search (MCTS), not a solved-game database.</p></details></aside></main><div class="footer">Independent browser implementation · Classic two-player Pentago rules · Move simulations are approximate; even Expert may make mistakes.</div></div>
+<main class="game"><section class="left"><div class="scorebar"><div class="player active" id="pHuman"><span class="marble"></span><div><div class="pname">You · Ivory</div><div class="psmall" id="humanState">Your turn</div></div></div><div class="player" id="pAI"><span class="marble ai"></span><div><div class="pname">Computer · Onyx</div><div class="psmall" id="aiState">Waiting</div></div></div></div><div class="boardframe"><div id="board" class="board" role="group" aria-label="Pentago board, four rotating quadrants"></div></div><div class="statline"><span id="moves">0 marbles placed</span><span id="searchStat">MCTS · Ready</span></div></section><aside class="aside"><div class="notice" id="notice" role="status" aria-live="polite"><strong id="statusTitle">Your move</strong><span id="statusDetail">Tap any empty circle to place an ivory marble.</span><div class="meter"><div class="fill" id="meterFill"></div></div></div><div class="controls"><div class="ctlhead">Computer strength</div><div class="segments" id="levels"><button data-level="0">Relaxed</button><button data-level="1" class="sel">Strong</button><button data-level="2">Expert</button></div><div class="setting"><label for="start">First player</label><select id="start"><option value="human">You</option><option value="ai">Computer</option></select></div><div class="actions"><button class="btn primary" id="newGame">New game</button><button class="btn" id="undo" disabled>Take back</button></div><div class="statline"><span>AI runs in your browser</span><span>No server needed</span></div></div><section class="analysis-panel" aria-label="Move analysis">
+<div class="analysis-header"><h2>Position analysis</h2><span id="analysisMeta" class="analysis-meta">Ready</span></div>
+<div class="analysis-switches">
+<label class="analysis-switch"><input type="checkbox" id="showOdds" checked> Win chances</label>
+<label class="analysis-switch"><input type="checkbox" id="showIvory" checked> Ivory heatmap <i class="swatch ivory" aria-hidden="true"></i></label>
+<label class="analysis-switch"><input type="checkbox" id="showOnyx"> Onyx heatmap <i class="swatch onyx" aria-hidden="true"></i></label>
+</div>
+<div class="odds" id="oddsBlock" aria-live="off"><div class="oddshead"><strong>Projected outcome</strong><span id="oddsSample">Calculating…</span></div>
+<div class="oddsbar" role="img" id="oddsGraph" aria-label="Estimated win chances"><div id="oddsWhite" class="white" style="width:50%"></div><div id="oddsDraw" class="draw" style="width:0%"></div><div id="oddsBlack" class="black" style="width:50%"></div></div>
+<div class="oddsnumbers"><span id="whitePct">Ivory —</span><span id="drawPct" style="color:#b6c3d0">Draw —</span><span id="blackPct">Onyx —</span></div>
+<p class="oddsnote">Monte Carlo outcomes against an approximate rollout policy. Not calibrated probabilities or perfect-play odds.</p></div>
+<div id="heatBlock"><div class="heatlegend"><span>Relative move quality</span><span class="heatgradient"></span><span>Better →</span></div>
+<div id="picks" class="picks"></div>
+<p class="heatnote">Each colored circle ranks a marble placement with its best sampled quadrant rotation. Brighter is better <em>relative to other placements</em>. When both maps are on, ivory colors the upper half and onyx the lower. Onyx recommendations assume it plays <em>next</em>, even on your turn. *Suggested-turn percentages are approximate expected scores (draw = ½), not calibrated win probabilities.</p></div>
+<p class="analysis-state" id="analysisState" role="status">Analyzing position…</p>
+</section><details class="rules"><summary>How to play</summary><p>On your turn, <b>place</b> one ivory marble in an empty circle, then <b>rotate</b> any quadrant 90° using its ↶ or ↷ arrow. The first player with five in an unbroken horizontal, vertical, or diagonal line wins. A five-in-a-row made by placing a marble wins immediately, with no rotation required. If a rotation gives both players five, it is a draw.</p><p>“Take back” returns to your previous turn. The computer uses heuristic-guided Monte Carlo Tree Search (MCTS), not a solved-game database. Position analysis is a separate, approximate Monte Carlo model; it may disagree with the computer.</p></details></aside></main><div class="footer">Independent browser implementation · Classic two-player Pentago rules · Move simulations and win percentages are approximate; even Expert may make mistakes.</div></div>
 <script>
 (()=>{'use strict';
 const HUMAN=1,AI=2,EMPTY=0;
@@ -57,19 +106,196 @@ const $=id=>document.getElementById(id),boardEl=$('board');
 for(let q=0;q<4;q++){const quadr=document.createElement('div');quadr.className='quad';quadr.id='quad'+q;const sq=document.createElement('div');sq.className='squares';for(let i=0;i<9;i++){const [r,c]=QUADS[q];const p=(r+(i/3|0))*6+c+i%3;const btn=document.createElement('button');btn.className='cell';btn.dataset.p=p;btn.setAttribute('aria-label','Row '+((p/6|0)+1)+', column '+(p%6+1));btn.addEventListener('click',()=>humanPlace(p));sq.appendChild(btn);}quadr.appendChild(sq);const tr=document.createElement('div');tr.className='twistrow';tr.innerHTML='<button class="twist" aria-label="Rotate quadrant '+(q+1)+' counterclockwise">↶</button><span class="quadlabel">'+('0'+(q+1))+'</span><button class="twist" aria-label="Rotate quadrant '+(q+1)+' clockwise">↷</button>';tr.children[0].addEventListener('click',()=>humanRotate(q,-1));tr.children[2].addEventListener('click',()=>humanRotate(q,1));quadr.appendChild(tr);boardEl.appendChild(quadr);}
 function winCells(b){const w=new Set();for(const l of WINLINES){const x=b[l[0]];if(x&&l.every(i=>b[i]===x))for(const i of l)w.add(i);}return w;}
 function status(title,detail,thinking=false){$('statusTitle').textContent=title;$('statusDetail').textContent=detail;$('notice').classList.toggle('thinking',thinking);}
-function render(){const cells=boardEl.querySelectorAll('.cell'),ws=(phase==='over'?winCells(board):new Set());for(const cell of cells){const p=+cell.dataset.p,t=board[p];cell.innerHTML=t?'<span class="disc '+(t===2?'ai':'')+'"></span>':'';cell.classList.toggle('recent',p===lastPlaced);cell.classList.toggle('win',ws.has(p));cell.disabled=phase!=='place'||t!==0;cell.setAttribute('aria-label','Row '+((p/6|0)+1)+', column '+(p%6+1)+': '+(t===1?'ivory':t===2?'onyx':'empty'));}for(let q=0;q<4;q++){const el=$('quad'+q),on=phase==='rotate';el.classList.toggle('rotate-ready',on);el.querySelectorAll('.twist').forEach(t=>t.disabled=!on);}
+
+// Move explorer: evaluate each empty cell with up to four promising complete turns.
+// Root actions are enumerated exhaustively (all eight quadrant rotations).
+// Simulated outcomes are against the rollout policy, not perfect play.
+let analysisToken=0,analysisData={1:null,2:null},oddsData=null,rotationData=null;
+const opts={odds:true,ivory:true,onyx:false};
+const waitFrame=fn=>setTimeout(fn,0);
+const fmtPct=x=>(100*x).toFixed(0)+'%';
+function cancelAnalysis(){analysisToken++;analysisData={1:null,2:null};rotationData=null;oddsData=null;clearHeat();}
+function clearHeat(){for(const cell of boardEl.querySelectorAll('.cell')){cell.querySelectorAll('.heat-layer,.ranktags').forEach(el=>el.remove());}for(const t of boardEl.querySelectorAll('.twist'))t.classList.remove('hint-rotation');}
+function relevantAnalysis(){return opts.odds||opts.ivory||opts.onyx;}
+function analysisPhase(){return phase==='rotate'?'rotate':phase==='place'?'place':phase==='over'?'over':'waiting';}
+function shortlistActions(b,side,p){
+ const placed=b.slice();placed[p]=side;
+ if(outcomeOnPlacement(placed,side))return [{p,q:-1,d:0,board:placed,result:side,score:1e8}];
+ const all=[];const seen=new Set();
+ for(let q=0;q<4;q++)for(const d of [-1,1]){
+  const a=evalAction(b,side,p,q,d);const key=a.board.join('');if(!seen.has(key)){seen.add(key);all.push(a);}
+ }
+ all.sort((a,b)=>b.score-a.score);
+ // Ensure every placement is represented, while concentrating rollouts on plausible rotations.
+ return all.slice(0,Math.min(4,all.length));
+}
+function estimateAction(action,side,trials){
+ if(action.result)return {action,mean:payoff(action.result,side),trials:0};
+ let sum=0;for(let i=0;i<trials;i++)sum+=simulate(action.board,3-side,side);
+ // Weak prior reduces small-sample variance; not a calibrated probability.
+ const prior=prob(heuristic(action.board,side));
+ return{action,mean:(sum+prior*2)/(trials+2),trials};
+}
+function makeTask(b,side,p){return{side,p,actions:shortlistActions(b,side,p),index:0,best:null};}
+function computeMaps(side, snapshot, taskId, done){
+ const open=[];for(let p=0;p<36;p++)if(!snapshot[p])open.push(p);
+ const items=[],tasks=open.map(p=>makeTask(snapshot,side,p));let index=0;
+ function batch(){if(taskId!==analysisToken)return;
+  const start=performance.now();
+  while(index<tasks.length&&performance.now()-start<12){
+   const t=tasks[index];for(const a of t.actions){
+    const r=estimateAction(a,side,4);
+    if(!t.best||r.mean>t.best.mean)t.best=r;
+   }
+   if(t.best)items.push({p:t.p,score:t.best.mean,action:t.best.action});
+   index++;
+  }
+  $('analysisMeta').textContent='Evaluating '+(side===HUMAN?'ivory':'onyx')+' · '+index+'/'+tasks.length;
+  if(index<tasks.length)waitFrame(batch);else {
+   items.sort((a,b)=>b.score-a.score);analysisData[side]=items;
+   done();
+  }
+ }
+ waitFrame(batch);
+}
+function optionsForRotation(b){const r=[];for(let q=0;q<4;q++)for(const d of [-1,1]){
+ const rotated=rotate(b,q,d);const result=outcome(rotated);
+ const a={board:rotated,result,p:-1,q,d,score:result===1?1e8:result===2?-1e8:heuristic(rotated,HUMAN)};
+ const est=estimateAction(a,HUMAN,8);r.push({p:-1,score:est.mean,action:a});
+ }return r.sort((a,b)=>b.score-a.score);}
+function finishOdds(snapshot,side,candidate,taskId){
+ if(!opts.odds||!candidate||taskId!==analysisToken)return;
+ const action=candidate.action;
+ const samples=72;let i=0,w=0,l=0,d=0;
+ function batch(){if(taskId!==analysisToken)return;
+  const start=performance.now();while(i<samples&&performance.now()-start<12){
+   let result=action.result||rolloutResult(action.board,3-side);
+   if(result===HUMAN)w++;else if(result===AI)l++;else d++;
+   i++;
+  }
+  oddsData={w,l,d,n:i};updateOdds();
+  if(i<samples)waitFrame(batch);else{$('analysisMeta').textContent='Analysis complete';$('analysisState').textContent='Sampled '+samples+' continuation games · Analysis is approximate.';}
+ }
+ waitFrame(batch);
+}
+function rolloutResult(b,t){
+ let state=b;
+ for(let k=0;k<36;k++){
+  const a=boundedSample(state,t);
+  if(!a)return 3;
+  if(a.result)return a.result;
+  state=a.board;t=3-t;
+ }
+ return 3;
+}
+function runAnalysis(){
+ const taskId=++analysisToken;
+ analysisData={1:null,2:null};rotationData=null;oddsData=null;
+ updateOdds();paintHeat();
+ $('analysisState').textContent='Evaluating complete turns…';$('analysisMeta').textContent='Calculating…';
+ if(!relevantAnalysis()){$('analysisMeta').textContent='Off';$('analysisState').textContent='';return;}
+ const state=analysisPhase();
+ if(state==='waiting'){$('analysisMeta').textContent='Computer playing';$('analysisState').textContent='Analysis resumes after the computer moves.';return;}
+ if(state==='over'){
+  const o=outcome(board);oddsData={w:o===1?1:0,l:o===2?1:0,d:o===3?1:0,n:1,exact:true};
+  $('analysisMeta').textContent='Final result';$('analysisState').textContent='Game finished.';updateOdds();return;
+ }
+ const snapshot=board.slice();
+ if(state==='rotate'){
+  if(!opts.ivory&&!opts.odds){$('analysisMeta').textContent='Waiting for rotation';$('analysisState').textContent='Onyx heatmap resumes after your rotation.';return;}
+  waitFrame(()=>{
+   if(taskId!==analysisToken)return;
+   rotationData=optionsForRotation(snapshot);paintHeat();
+   if(opts.odds)finishOdds(snapshot,HUMAN,rotationData[0],taskId);
+   else{$('analysisMeta').textContent='Analysis complete';$('analysisState').textContent='Rotation suggestions ready.';}
+  });return;
+ }
+ const sides=[];
+ if(opts.ivory||opts.odds)sides.push(HUMAN);
+ if(opts.onyx||opts.odds && $('start').value==='ai' && board.every(v=>!v))sides.push(AI);
+ // The current side is always ivory after the computer has completed a move,
+ // except at initial state when computer is set to go first (handled above).
+ const afterSide=()=>{
+  if(taskId!==analysisToken)return;
+  paintHeat();
+  const next=sides.shift();
+  if(next)computeMaps(next,snapshot,taskId,afterSide);
+  else if(opts.odds){
+   let best=(analysisData[HUMAN]||[])[0];
+   if(!best){$('analysisMeta').textContent='No legal move';return;}
+   finishOdds(snapshot,HUMAN,best,taskId);
+  }else{$('analysisMeta').textContent='Analysis complete';$('analysisState').textContent='Heatmap ready.';}
+ };
+ // If only onyx heat is enabled, still compute it, as a counterfactual next turn.
+ if(opts.onyx && !sides.includes(AI))sides.push(AI);
+ afterSide();
+}
+function updateOdds(){
+ $('oddsBlock').hidden=!opts.odds;
+ if(!opts.odds)return;
+ if(!oddsData){$('whitePct').textContent='Ivory —';$('drawPct').textContent='Draw —';$('blackPct').textContent='Onyx —';$('oddsSample').textContent='Sampling…';$('oddsWhite').style.width='50%';$('oddsDraw').style.width='0%';$('oddsBlack').style.width='50%';return;}
+ const {w,l,d,n,exact}=oddsData;const p=n?w/n:0,q=n?l/n:0,z=n?d/n:0;
+ $('whitePct').textContent='Ivory '+fmtPct(p);$('blackPct').textContent='Onyx '+fmtPct(q);$('drawPct').textContent='Draw '+fmtPct(z);
+ $('oddsWhite').style.width=100*p+'%';$('oddsDraw').style.width=100*z+'%';$('oddsBlack').style.width=100*q+'%';
+ $('oddsSample').textContent=exact?'Final result':n+' simulated '+(n===1?'game':'games');
+ $('oddsGraph').setAttribute('aria-label',`Ivory ${fmtPct(p)}, draw ${fmtPct(z)}, onyx ${fmtPct(q)}`);
+}
+function pickText(x){const a=x.action;if(a.q<0)return'Instant five-in-a-row';return'Q'+(a.q+1)+' '+(a.d===1?'↷':'↶');}
+function picksMarkup(items,side,title){
+ if(!items||!items.length)return'';
+ const top=items.slice(0,3);return `<div class="pickgroup ${side===AI?'onyx':''}"><h3><strong>${title}</strong> · suggested turns</h3>${top.map((x,i)=>`<div class="pickrow"><span class="pickno">${i+1}</span><span class="pickloc">${x.p<0?'Rotate':`R${(x.p/6|0)+1} C${x.p%6+1}`}</span><span class="pickdesc">${pickText(x)}</span><span class="pickpct">${fmtPct(x.score)}*</span></div>`).join('')}</div>`;
+}
+function paintHeat(){
+ clearHeat();$('heatBlock').hidden=!opts.ivory&&!opts.onyx;
+ const target=$('picks');target.innerHTML='';
+ if(!opts.ivory&&!opts.onyx)return;
+ if(phase==='over')return;
+ if(phase==='rotate'){
+  if(rotationData && opts.ivory){
+   const best=rotationData[0];if(best){const tr=$('quad'+best.action.q).querySelectorAll('.twist')[best.action.d===-1?0:1];tr.classList.add('hint-rotation');}
+   target.innerHTML=picksMarkup(rotationData,HUMAN,'Ivory rotation');
+  }
+  return;
+ }
+ if(phase!=='place')return;
+ const h=opts.ivory?analysisData[HUMAN]:null,a=opts.onyx?analysisData[AI]:null;
+ target.innerHTML=(h?picksMarkup(h,HUMAN,'Ivory'):opts.ivory?'<p class="analysis-state">Evaluating ivory…</p>':'')+(a?picksMarkup(a,AI,'Onyx'):opts.onyx?'<p class="analysis-state">Evaluating onyx…</p>':'');
+ const heatToMap=items=>{
+  if(!items?.length)return new Map();
+  const highs=items[0].score,lows=items[items.length-1].score,range=Math.max(.09,highs-lows);
+  return new Map(items.map((x,i)=>[x.p,{quality:Math.max(0,Math.min(1,(x.score-lows)/range)),rank:i<3?i+1:0}]));
+ };
+ const wh=heatToMap(h),bl=heatToMap(a);
+ for(const cell of boardEl.querySelectorAll('.cell')){
+  const p=+cell.dataset.p;if(board[p])continue;
+  const w=wh.get(p),b=bl.get(p);if(!w&&!b)continue;
+  const overlay=document.createElement('span');overlay.className='heat-layer';
+  const white=w?`rgba(240,193,112,${(.13+.75*w.quality).toFixed(3)})`:'transparent';
+  const black=b?`rgba(97,188,241,${(.13+.75*b.quality).toFixed(3)})`:'transparent';
+  overlay.style.background=w&&b?`linear-gradient(to bottom,${white} 0%,${white} 49%,${black} 51%,${black} 100%)`:w?white:black;
+  cell.prepend(overlay);
+  if(w?.rank||b?.rank){const marks=document.createElement('span');marks.className='ranktags';if(w?.rank){const s=document.createElement('span');s.className='ranktag';s.textContent=w.rank;marks.appendChild(s);}if(b?.rank){const s=document.createElement('span');s.className='ranktag onyx';s.textContent=b.rank;marks.appendChild(s);}cell.appendChild(marks);}
+  const desc=[w?`ivory quality ${fmtPct(w.quality)} relative`:null,b?`onyx quality ${fmtPct(b.quality)} relative`:null].filter(Boolean).join(', ');
+  cell.title=`Row ${Math.floor(p/6)+1}, column ${p%6+1}: ${desc}`;
+ }
+}
+for(const [id,key] of [['showOdds','odds'],['showIvory','ivory'],['showOnyx','onyx']]){
+ $(id).addEventListener('change',e=>{opts[key]=e.target.checked;cancelAnalysis();runAnalysis();});
+}
+
+function render(){const cells=boardEl.querySelectorAll('.cell'),ws=(phase==='over'?winCells(board):new Set());for(const cell of cells){const p=+cell.dataset.p,t=board[p];cell.innerHTML=t?'<span class="disc '+(t===2?'ai':'')+'"></span>':'';cell.removeAttribute('title');cell.classList.toggle('recent',p===lastPlaced);cell.classList.toggle('win',ws.has(p));cell.disabled=phase!=='place'||t!==0;cell.setAttribute('aria-label','Row '+((p/6|0)+1)+', column '+(p%6+1)+': '+(t===1?'ivory':t===2?'onyx':'empty'));}for(let q=0;q<4;q++){const el=$('quad'+q),on=phase==='rotate';el.classList.toggle('rotate-ready',on);el.querySelectorAll('.twist').forEach(t=>t.disabled=!on);}
  $('pHuman').classList.toggle('active',phase==='place'||phase==='rotate');$('pAI').classList.toggle('active',phase==='thinking');$('humanState').textContent=phase==='rotate'?'Choose rotation':phase==='place'?'Your turn':phase==='over'?'Game finished':'Waiting';$('aiState').textContent=phase==='thinking'?'Calculating…':phase==='over'?'Game finished':'Waiting';let n=0;for(const x of board)if(x)n++;$('moves').textContent=n+' marble'+(n===1?'':'s')+' placed';$('undo').disabled=history.length===0;}
-function endGame(out){phase='over';if(out===1)status('You win!','Five ivory marbles in a row. Nicely played.');else if(out===2)status('Computer wins','Five onyx marbles in a row. Try another round?');else status('A draw','Neither player wins (or both made five simultaneously).');render();}
-function humanPlace(p){if(phase!=='place'||board[p])return;history.push(board.slice());board[p]=1;lastPlaced=p;if(outcomeOnPlacement(board,1)){endGame(1);return;}phase='rotate';status('Now twist a quadrant','Tap ↶ or ↷ beneath any of the four quadrants.');render();}
-function humanRotate(q,d){if(phase!=='rotate')return;board=rotate(board,q,d);lastPlaced=-1;const result=outcome(board);if(result){endGame(result);return;}startAI();}
+function endGame(out){cancelAnalysis();phase='over';if(out===1)status('You win!','Five ivory marbles in a row. Nicely played.');else if(out===2)status('Computer wins','Five onyx marbles in a row. Try another round?');else status('A draw','Neither player wins (or both made five simultaneously).');render();runAnalysis();}
+function humanPlace(p){if(phase!=='place'||board[p])return;history.push(board.slice());cancelAnalysis();board[p]=1;lastPlaced=p;if(outcomeOnPlacement(board,1)){endGame(1);return;}phase='rotate';status('Now twist a quadrant','Tap ↶ or ↷ beneath any of the four quadrants.');render();runAnalysis();}
+function humanRotate(q,d){if(phase!=='rotate')return;cancelAnalysis();board=rotate(board,q,d);lastPlaced=-1;const result=outcome(board);if(result){endGame(result);return;}startAI();}
 function chooseFromTree(tree){const a=[...tree.children].sort((x,y)=>y.visits-x.visits||y.total/(y.visits||1)-x.total/(x.visits||1));return a.length?a[0].move:null;}
-function startAI(){const id=++token;phase='thinking';aiBusy=true;render();status('Computer is thinking','Exploring possible placements and rotations…',true);$('meterFill').style.width='0%';let root=searchStart(board,AI);const total=[160,550,1600][level];let done=0;const tactical=moves(board,AI,0);if(tactical.length&&tactical[0].result===AI){setTimeout(()=>{if(id===token)finishAI(tactical[0],1)},180);return;}
+function startAI(){cancelAnalysis();const id=++token;phase='thinking';aiBusy=true;render();status('Computer is thinking','Exploring possible placements and rotations…',true);$('meterFill').style.width='0%';let root=searchStart(board,AI);const total=[160,550,1600][level];let done=0;const tactical=moves(board,AI,0);if(tactical.length&&tactical[0].result===AI){setTimeout(()=>{if(id===token)finishAI(tactical[0],1)},180);return;}
  function batch(){if(id!==token)return;const start=performance.now();while(done<total&&performance.now()-start<20){iteration(root);done++;}const pct=100*done/total;$('meterFill').style.width=pct+'%';$('statusDetail').textContent='Explored '+done.toLocaleString()+' / '+total.toLocaleString()+' simulations';if(done<total)setTimeout(batch,0);else finishAI(chooseFromTree(root)||tactical[0],done);}
  setTimeout(batch,45);
 }
-function finishAI(move,runs){if(!move){phase='place';aiBusy=false;render();status('Your move','Tap an empty circle to place a marble.');return;}board=move.board.slice();lastPlaced=move.p;computerRuns=runs;aiBusy=false;$('searchStat').textContent='MCTS · '+runs.toLocaleString()+' simulations';const result=move.result;if(result){endGame(result);return;}phase='place';status('Your move',move.q<0?'Computer placed a marble.':`Computer placed at row ${(move.p/6|0)+1}, column ${move.p%6+1} and rotated quadrant ${move.q+1} ${move.d===1?'clockwise':'counterclockwise'}.`);render();}
-function startNew(){token++;board=new Uint8Array(36);history=[];lastPlaced=-1;phase='place';aiBusy=false;$('searchStat').textContent='MCTS · Ready';$('meterFill').style.width='0%';status('Your move','Tap any empty circle to place an ivory marble.');render();if($('start').value==='ai')startAI();}
-function undo(){if(!history.length)return;token++;board=history.pop();lastPlaced=-1;phase='place';aiBusy=false;$('searchStat').textContent='MCTS · Ready';status('Your move','Your last turn was taken back. Choose another placement.');render();}
+function finishAI(move,runs){if(!move){phase='place';aiBusy=false;render();status('Your move','Tap an empty circle to place a marble.');return;}board=move.board.slice();lastPlaced=move.p;computerRuns=runs;aiBusy=false;$('searchStat').textContent='MCTS · '+runs.toLocaleString()+' simulations';const result=move.result;if(result){endGame(result);return;}phase='place';status('Your move',move.q<0?'Computer placed a marble.':`Computer placed at row ${(move.p/6|0)+1}, column ${move.p%6+1} and rotated quadrant ${move.q+1} ${move.d===1?'clockwise':'counterclockwise'}.`);render();runAnalysis();}
+function startNew(){cancelAnalysis();token++;board=new Uint8Array(36);history=[];lastPlaced=-1;phase='place';aiBusy=false;$('searchStat').textContent='MCTS · Ready';$('meterFill').style.width='0%';status('Your move','Tap any empty circle to place an ivory marble.');render();if($('start').value==='ai')startAI();else runAnalysis();}
+function undo(){if(!history.length)return;cancelAnalysis();token++;board=history.pop();lastPlaced=-1;phase='place';aiBusy=false;$('searchStat').textContent='MCTS · Ready';status('Your move','Your last turn was taken back. Choose another placement.');render();runAnalysis();}
 $('newGame').addEventListener('click',startNew);$('undo').addEventListener('click',undo);$('levels').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{level=+b.dataset.level;$('levels').querySelectorAll('button').forEach(x=>x.classList.toggle('sel',x===b));}));startNew();
 })();
 </script></body></html>
